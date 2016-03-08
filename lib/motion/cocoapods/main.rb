@@ -26,6 +26,8 @@ module Motion
   class CocoaPods
     PODS_ROOT = 'vendor/Pods'
     TARGET_NAME = 'RubyMotion'
+    PUBLIC_HEADERS_ROOT = File.join(PODS_ROOT, 'Headers/Public')
+    PODS_ROOT_MATCHER = /(\$\(PODS_ROOT\))|(\$\{PODS_ROOT\})/
     SUPPORT_FILES = File.join(PODS_ROOT, "Target Support Files/Pods-#{TARGET_NAME}")
 
     attr_accessor :podfile
@@ -34,27 +36,23 @@ module Motion
       @config = config
       @vendor_options = vendor_options
 
-      case @config.deploy_platform
-      when 'MacOSX'
-        platform = :osx
-      when 'iPhoneOS'
-        platform = :ios
-      when 'AppleTVOS'
-        platform = :tvos
-      when 'WatchOS'
-        platform = :watchos
-      else
-        App.fail "Unknown CocoaPods platform: #{@config.deploy_platform}"
-      end
+      platform =
+        case @config.deploy_platform
+        when 'MacOSX' then :osx
+        when 'iPhoneOS' then :ios
+        when 'AppleTVOS' then :tvos
+        when 'WatchOS' then :watchos
+        else App.fail "Unknown CocoaPods platform: #{@config.deploy_platform}"
+        end
 
       @podfile = Pod::Podfile.new(Pathname.new(Rake.original_dir) + 'Rakefile') {}
       @podfile.platform(platform, config.deployment_target)
       @podfile.target(TARGET_NAME)
-      cp_config.podfile = @podfile
-      cp_config.skip_repo_update = true
-      cp_config.installation_root = Pathname.new(File.expand_path(config.project_dir)) + 'vendor'
+      cocoapods_config.podfile = @podfile
+      cocoapods_config.skip_repo_update = true
+      cocoapods_config.installation_root = Pathname.new(File.expand_path(config.project_dir)) + 'vendor'
 
-      if cp_config.verbose = !!ENV['COCOAPODS_VERBOSE']
+      if cocoapods_config.verbose = !!ENV['COCOAPODS_VERBOSE']
         require 'claide'
       end
 
@@ -67,120 +65,8 @@ module Motion
       @config.resources_dirs << resources_dir.to_s
 
       # TODO replace this all once Xcodeproj has the proper xcconfig parser.
-      if (xcconfig = self.pods_xcconfig_hash) && ldflags = xcconfig['OTHER_LDFLAGS']
-        lib_search_path_flags = xcconfig['LIBRARY_SEARCH_PATHS'] || ""
-        lib_search_paths = []
-        lib_search_path_flags = lib_search_path_flags.split(/\s/).map do |path|
-          if path =~ /(\$\(inherited\))|(\$\{inherited\})/
-            nil
-          else
-            path = path.gsub(/(\$\(PODS_ROOT\))|(\$\{PODS_ROOT\})/, File.join(@config.project_dir, PODS_ROOT))
-            lib_search_paths << path.gsub('"', '')
-            '-L ' << path
-          end
-        end.compact.join(' ')
-
-        # Get the name of all static libraries that come pre-built with pods
-        pre_built_static_libs = lib_search_paths.map do |path|
-          Dir[File.join(path, '**/*.a')].map { |f| File.basename(f) }
-        end.flatten
-
-        # Collect the Pod products
-        pods_libs = []
-
-        @config.libs.concat(ldflags.scan(/-l"?([^\s"]+)"?/).map { |m|
-          lib_name = m[0]
-          next if lib_name.nil?
-          if lib_name.start_with?('Pods-')
-            # For CocoaPods 0.37.x or below. This block is marked as deprecated.
-            pods_libs << lib_name
-            nil
-          elsif pre_built_static_libs.include?("lib#{lib_name}.a")
-            "#{lib_search_path_flags} -ObjC -l#{lib_name}"
-          elsif File.exist?("/usr/lib/lib#{lib_name}.dylib")
-            "/usr/lib/lib#{lib_name}.dylib"
-          else
-            pods_libs << lib_name
-            nil
-          end
-        }.compact)
-        @config.libs.uniq!
-
-        framework_search_paths = []
-        if search_paths = xcconfig['FRAMEWORK_SEARCH_PATHS']
-          search_paths = search_paths.strip
-          unless search_paths.empty?
-            search_paths.scan(/"([^"]+)"/) do |search_path|
-              path = search_path.first.gsub!(/(\$\(PODS_ROOT\))|(\$\{PODS_ROOT\})/, "#{@config.project_dir}/#{PODS_ROOT}")
-              framework_search_paths << path if path
-            end
-            # If we couldn't parse any search paths, then presumably nothing was properly quoted, so
-            # fallback to just assuming the whole value is one path.
-            if framework_search_paths.empty?
-              path = search_paths.gsub!(/(\$\(PODS_ROOT\))|(\$\{PODS_ROOT\})/, "#{@config.project_dir}/#{PODS_ROOT}")
-              framework_search_paths << path if path
-            end
-          end
-        end
-
-        header_dirs = ['Headers/Public']
-        frameworks = ldflags.scan(/-framework\s+"?([^\s"]+)"?/).map { |m| m[0] }
-
-        case @config.deploy_platform
-        when 'MacOSX'
-          @config.framework_search_paths.concat(framework_search_paths)
-          @config.framework_search_paths.uniq!
-          framework_search_paths.each do |framework_search_path|
-            frameworks.reject! do |framework|
-              path = File.join(framework_search_path, "#{framework}.framework")
-              if File.exist?(path)
-                @config.embedded_frameworks << path
-                true
-              else
-                false
-              end
-            end
-          end
-        when 'iPhoneOS'
-          pods_root = cp_config.installation_root + 'Pods'
-          # If we would really specify these as ‘frameworks’ then the linker
-          # would not link the archive into the application, because it does not
-          # see any references to any of the symbols in the archive. Treating it
-          # as a static library (which it is) with `-ObjC` fixes this.
-          #
-          framework_search_paths.each do |framework_search_path|
-            frameworks.reject! do |framework|
-              path = File.join(framework_search_path, "#{framework}.framework")
-              if File.exist?(path)
-                @config.libs << "-ObjC '#{File.join(path, framework)}'"
-                # This is needed until (and if) CocoaPods links framework
-                # headers into `Headers/Public` by default:
-                #
-                #   https://github.com/CocoaPods/CocoaPods/pull/2722
-                #
-                header_dir = Pathname.new(path) + 'Headers'
-                header_dirs << header_dir.realpath.relative_path_from(pods_root).to_s
-                true
-              else
-                false
-              end
-            end
-          end
-        end
-
-        @config.frameworks.concat(frameworks)
-        @config.frameworks.uniq!
-
-        @config.weak_frameworks.concat(ldflags.scan(/-weak_framework\s+([^\s]+)/).map { |m| m[0] })
-        @config.weak_frameworks.uniq!
-
-        @config.vendor_project(PODS_ROOT, :xcode, {
-          :target => "Pods-#{TARGET_NAME}",
-          :headers_dir => "{#{header_dirs.join(',')}}",
-          :products => pods_libs.map { |lib_name| "lib#{lib_name}.a" },
-          :allow_empty_products => (pods_libs.empty? ? true : false),
-        }.merge(@vendor_options))
-      end
+      return unless xcconfig_hash && ldflags
+      configure_xcconfig
     end
 
     # DSL
@@ -207,7 +93,11 @@ module Motion
     #-------------------------------------------------------------------------#
 
     def pods_installer
-      @installer ||= Pod::Installer.new(cp_config.sandbox, @podfile, cp_config.lockfile)
+      @installer ||= Pod::Installer.new(
+        cocoapods_config.sandbox,
+        @podfile,
+        cocoapods_config.lockfile
+      )
     end
 
     # Performs a CocoaPods Installation.
@@ -231,29 +121,32 @@ module Motion
     def install_resources
       FileUtils.rm_rf(resources_dir)
       FileUtils.mkdir_p(resources_dir)
-      resources.each do |file|
-        begin
-          FileUtils.cp_r(file, resources_dir) if file.exist?
-        rescue ArgumentError => exc
-          unless exc.message =~ /same file/
-            raise
-          end
-        end
-      end
+      resources.each { |file| install_resource(file, resources_dir) }
     end
 
-    PUBLIC_HEADERS_ROOT = File.join(PODS_ROOT, 'Headers/Public')
+    def install_resource(file, resources_dir)
+      FileUtils.cp_r(file, resources_dir) if file.exist?
+    rescue ArgumentError => exc
+      raise unless exc.message =~ /same file/
+    end
 
     def copy_cocoapods_env_and_prefix_headers
-      headers = Dir.glob(["#{PODS_ROOT}/*.h", "#{PODS_ROOT}/*.pch", "#{PODS_ROOT}/Target Support Files/**/*.h", "#{PODS_ROOT}/Target Support Files/**/*.pch"])
+      headers = Dir.glob([
+        "#{PODS_ROOT}/*.h",
+        "#{PODS_ROOT}/*.pch",
+        "#{PODS_ROOT}/Target Support Files/**/*.h",
+        "#{PODS_ROOT}/Target Support Files/**/*.pch"
+      ])
+
       headers.each do |header|
         src = File.basename(header)
         dst = src.sub(/\.pch$/, '.h')
         dst_path = File.join(PUBLIC_HEADERS_ROOT, "____#{dst}")
-        unless File.exist?(dst_path)
-          FileUtils.mkdir_p(PUBLIC_HEADERS_ROOT)
-          FileUtils.cp(header, dst_path)
-        end
+
+        next if File.exist?(dst_path)
+
+        FileUtils.mkdir_p(PUBLIC_HEADERS_ROOT)
+        FileUtils.cp(header, dst_path)
       end
     end
 
@@ -264,29 +157,35 @@ module Motion
     # short and sweet.
     #
     def inspect
-      cp_config.lockfile.to_hash['PODS'].map do |pod|
+      cocoapods_config.lockfile.to_hash['PODS'].map do |pod|
         pod.is_a?(Hash) ? pod.keys.first : pod
       end.inspect
     end
 
-    def cp_config
+    def cocoapods_config
       Pod::Config.instance
     end
 
     def analyzer
-      cp_config = Pod::Config.instance
-      Pod::Installer::Analyzer.new(cp_config.sandbox, @podfile, cp_config.lockfile)
+      Pod::Installer::Analyzer.new(
+        cocoapods_config.sandbox,
+        @podfile,
+        cocoapods_config.lockfile
+      )
     end
 
     def pods_xcconfig
-      path = Pathname.new(@config.project_dir) + SUPPORT_FILES + "Pods-#{TARGET_NAME}.release.xcconfig"
+      path =
+        Pathname.new(@config.project_dir) +
+        SUPPORT_FILES +
+        "Pods-#{TARGET_NAME}.release.xcconfig"
       Xcodeproj::Config.new(path) if path.exist?
     end
 
-    def pods_xcconfig_hash
-      if xcconfig = pods_xcconfig
-        xcconfig.to_hash
-      end
+    def xcconfig_hash
+      return unless pods_xcconfig
+
+      @xcconfig_hash ||= pods_xcconfig.to_hash
     end
 
     # Do not copy `.framework` bundles, these should be handled through RM's
@@ -310,6 +209,186 @@ module Motion
 
     def resources_dir
       Pathname.new(@config.project_dir) + PODS_ROOT + 'Resources'
+    end
+
+    private
+
+    def configure_xcconfig
+      lib_search_paths, lib_search_path_flags = parse_search_paths_and_flags
+
+      # Get the name of all static libraries that come pre-built with pods
+      @pre_built_static_libs =
+        lib_search_paths.map { |path| static_libraries_in_path(path) }.flatten
+
+      # Collect the Pod products
+      pods_libs, libs_to_compile = categorize_libs(lib_search_path_flags)
+
+      @config.libs.concat(libs_to_compile.compact)
+      @config.libs.uniq!
+
+      @header_dirs = ['Headers/Public']
+
+      case @config.deploy_platform
+      when 'MacOSX' then configure_for_osx(framework_search_paths)
+      when 'iPhoneOS' then configure_for_iphone(framework_search_paths)
+      end
+
+      @config.frameworks.concat(frameworks)
+      @config.frameworks.uniq!
+
+      @config.weak_frameworks.concat(weak_frameworks)
+      @config.weak_frameworks.uniq!
+
+      @config.vendor_project(PODS_ROOT, :xcode, {
+        :target => "Pods-#{TARGET_NAME}",
+        :headers_dir => "{#{@header_dirs.join(',')}}",
+        :products => pods_libs.map { |lib_name| "lib#{lib_name}.a" },
+        :allow_empty_products => (pods_libs.empty? ? true : false),
+      }.merge(@vendor_options))
+    end
+
+    def categorize_libs(lib_search_path_flags)
+      pods_libs = []
+      libs_to_compile = []
+
+      linked_libraries.each do |library|
+        path = parsed_library_path(library, lib_search_path_flags)
+
+        case path
+        when String then libs_to_compile << path
+        when :pod then pods_libs << library
+        end
+      end
+
+      [pods_libs.flatten, libs_to_compile]
+    end
+
+    def configure_for_iphone(framework_search_paths)
+      pods_root = cocoapods_config.installation_root + 'Pods'
+      # If we would really specify these as ‘frameworks’ then the linker
+      # would not link the archive into the application, because it does not
+      # see any references to any of the symbols in the archive. Treating it
+      # as a static library (which it is) with `-ObjC` fixes this.
+      #
+      framework_search_paths.each do |framework_search_path|
+        frameworks.reject! do |framework|
+          path = File.join(framework_search_path, "#{framework}.framework")
+          if File.exist?(path)
+            @config.libs << "-ObjC '#{File.join(path, framework)}'"
+            # This is needed until (and if) CocoaPods links framework
+            # headers into `Headers/Public` by default:
+            #
+            #   https://github.com/CocoaPods/CocoaPods/pull/2722
+            #
+            header_dir = Pathname.new(path) + 'Headers'
+            @header_dirs << header_dir.realpath.relative_path_from(pods_root).to_s
+            true
+          else
+            false
+          end
+        end
+      end
+    end
+
+    def configure_for_osx(framework_search_paths)
+      @config.framework_search_paths.concat(framework_search_paths)
+      @config.framework_search_paths.uniq!
+
+      framework_search_paths.each do |framework_search_path|
+        frameworks.reject! do |framework|
+          path = File.join(framework_search_path, "#{framework}.framework")
+          if File.exist?(path)
+            @config.embedded_frameworks << path
+            true
+          else
+            false
+          end
+        end
+      end
+    end
+
+    def frameworks
+      ldflags.scan(/-framework\s+"?([^\s"]+)"?/).map { |match| match[0] }
+    end
+
+    def framework_search_paths
+      search_paths = xcconfig_hash['FRAMEWORK_SEARCH_PATHS']
+
+      return [] unless search_paths
+
+      search_paths.strip!
+
+      return [] if search_paths.empty?
+
+      framework_search_paths = []
+
+      search_paths.scan(/"([^"]+)"/) do |search_path|
+        path = search_path.first.gsub!(PODS_ROOT_MATCHER, "#{@config.project_dir}/#{PODS_ROOT}")
+        framework_search_paths << path if path
+      end
+
+      # If we couldn't parse any search paths, then presumably nothing was properly quoted, so
+      # fallback to just assuming the whole value is one path.
+      if framework_search_paths.empty?
+        path = search_paths.gsub!(PODS_ROOT_MATCHER, "#{@config.project_dir}/#{PODS_ROOT}")
+        framework_search_paths << path if path
+      end
+
+      framework_search_paths
+    end
+
+    def ldflags
+      xcconfig_hash['OTHER_LDFLAGS']
+    end
+
+    def linked_libraries
+      ldflags.scan(/-l"?([^\s"]+)"?/)
+    end
+
+    def parse_search_paths_and_flags
+      flags = xcconfig_hash['LIBRARY_SEARCH_PATHS'] || ""
+
+      search_paths = []
+
+      flags = flags.split(/\s/).map do |path|
+        next if path =~ /(\$\(inherited\))|(\$\{inherited\})/
+
+        path.gsub!(
+          /(\$\(PODS_ROOT\))|(\$\{PODS_ROOT\})/,
+          File.join(@config.project_dir, PODS_ROOT)
+        )
+
+        search_paths << path.gsub('"', '')
+
+        '-L ' << path
+      end
+
+      [search_paths, flags.compact.join(' ')]
+    end
+
+    def parsed_library_path(library, lib_search_path_flags)
+      lib_name = library[0]
+
+      return unless lib_name
+
+      # For CocoaPods 0.37.x or below. This block is marked as deprecated.
+      if lib_name.start_with?('Pods-')
+        :pod
+      elsif @pre_built_static_libs.include?("lib#{lib_name}.a")
+        "#{lib_search_path_flags} -ObjC -l#{lib_name}"
+      elsif File.exist?("/usr/lib/lib#{lib_name}.dylib")
+        "/usr/lib/lib#{lib_name}.dylib"
+      else
+        :pod
+      end
+    end
+
+    def static_libraries_in_path(path)
+      Dir[File.join(path, '**/*.a')].map { |f| File.basename(f) }
+    end
+
+    def weak_frameworks
+      ldflags.scan(/-weak_framework\s+([^\s]+)/).map { |match| match[0] }
     end
   end
 end
