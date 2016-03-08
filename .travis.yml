@@ -1,0 +1,23 @@
+language: objective-c
+
+osx_image: xcode7.2
+rvm: '2.2.3'
+
+before_install:
+  - sudo motion update
+  - rvm get stable --auto-dotfiles
+  - gem update --system --no-document --quiet
+  - gem install bundler rake --no-document --quiet
+  - sudo gem install cocoapods --pre --no-document --quiet
+  - pod --version
+  - pod setup --silent
+
+install:
+  - bundle install
+
+script:
+  - bundle exec rake spec
+
+cache:
+  bundler: true
+  cocoapods: true
