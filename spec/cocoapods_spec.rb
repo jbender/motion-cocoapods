@@ -69,10 +69,19 @@ describe "motion-cocoapods" do
   end
 
   it "adds all the system frameworks and libraries" do
-    rm_default = %w{ UIKit Foundation CoreGraphics CoreFoundation CFNetwork CoreAudio }
-    afnetworking = %w{ CoreGraphics MobileCoreServices Security SystemConfiguration }
-    afincrementalstore = %w{ CoreData }
-    hockey = %w{ AssetsLibrary CoreText CoreGraphics MobileCoreServices QuartzCore QuickLook Security SystemConfiguration UIKit }
+    rm_default = %w{ CoreGraphics Foundation UIKit }
+    afnetworking = %w{
+      CoreGraphics Foundation MobileCoreServices Security SystemConfiguration
+      UIKit
+    }
+    afincrementalstore = %w{
+      CoreData CoreGraphics Foundation MobileCoreServices Security
+      SystemConfiguration UIKit
+    }
+    hockey = %w{
+      AssetsLibrary CoreGraphics CoreText CrashReporter Foundation
+      MobileCoreServices QuartzCore QuickLook Security SystemConfiguration UIKit
+    }
     @config.frameworks.sort.should == (rm_default + afnetworking + afincrementalstore + hockey).uniq.sort
     @config.libs.should.include '/usr/lib/libxml2.dylib'
   end
