@@ -358,7 +358,7 @@ module Motion
           File.join(@config.project_dir, PODS_ROOT)
         )
 
-        search_paths << path.gsub('"', '')
+        search_paths << path.delete('"')
 
         '-L ' << path
       end
