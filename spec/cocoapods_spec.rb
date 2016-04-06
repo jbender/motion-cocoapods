@@ -69,7 +69,9 @@ describe "motion-pods" do
   end
 
   it "adds all the system frameworks and libraries" do
-    rm_default = %w{ CoreGraphics Foundation UIKit }
+    rm_default = %w{
+      CFNetwork CoreAudio CoreFoundation CoreGraphics Foundation UIKit
+    }
     afnetworking = %w{
       CoreGraphics Foundation MobileCoreServices Security SystemConfiguration
       UIKit
