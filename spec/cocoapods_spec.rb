@@ -90,7 +90,7 @@ describe "motion-cocoapods" do
     @config.libs.should.include "-ObjC '#{File.join(@config.project_dir, 'vendor/Pods/HockeySDK/Vendor/CrashReporter.framework/CrashReporter')}'"
   end
 
-  # TODO add test for OS X with embedded frameworks or iOS >= 8 that has dynamic libraries
+  # TODO: add test for OS X with embedded frameworks or iOS >= 8 that has dynamic libraries
   #
   #it "adds a prebuilt framework to the embedded_frameworks" do
     #@config.embedded_frameworks.should == [File.join(@config.project_dir, 'vendor/Pods/HockeySDK/Vendor/CrashReporter.framework')]

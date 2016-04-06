@@ -41,15 +41,15 @@ namespace :pod do
 
   desc "Download and integrate newly added pods"
   task :install => :update_spec_repos do
-    # TODO Should ideally not have to be controller manually.
+    # TODO: Should ideally not have to be controller manually.
     Pod::UserInterface.title_level = 1
 
     pods = App.config.pods
 
-    # TODO fix this, see https://git.io/vae3Z
+    # TODO: fix this, see https://git.io/vae3Z
     need_install = (pods.analyzer.needs_install? rescue true)
 
-    # TODO Should ideally not have to be controller manually.
+    # TODO: Should ideally not have to be controller manually.
     Pod::UserInterface.title_level = 0
 
     pods.install!(false) if need_install

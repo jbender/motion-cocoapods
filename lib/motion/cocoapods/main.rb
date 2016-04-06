@@ -52,7 +52,7 @@ module Motion
       cocoapods_config.skip_repo_update = true
       cocoapods_config.installation_root = Pathname.new(File.expand_path(config.project_dir)) + 'vendor'
 
-      if cocoapods_config.verbose = !!ENV['COCOAPODS_VERBOSE']
+      if cocoapods_config.verbose = !!ENV["COCOAPODS_VERBOSE"]
         require 'claide'
       end
 
@@ -64,7 +64,7 @@ module Motion
     def configure_project
       @config.resources_dirs << resources_dir.to_s
 
-      # TODO replace this all once Xcodeproj has the proper xcconfig parser.
+      # TODO: replace this all once Xcodeproj has the proper xcconfig parser.
       return unless xcconfig_hash && ldflags
       configure_xcconfig
     end
@@ -116,8 +116,7 @@ module Motion
       copy_cocoapods_env_and_prefix_headers
     end
 
-    # TODO this probably breaks in cases like resource bundles etc, need to test.
-    #
+    # TODO: this probably breaks in cases like resource bundles etc, need to test.
     def install_resources
       FileUtils.rm_rf(resources_dir)
       FileUtils.mkdir_p(resources_dir)
@@ -140,7 +139,7 @@ module Motion
 
       headers.each do |header|
         src = File.basename(header)
-        dst = src.sub(/\.pch$/, '.h')
+        dst = src.sub(/\.pch$/, ".h")
         dst_path = File.join(PUBLIC_HEADERS_ROOT, "____#{dst}")
 
         next if File.exist?(dst_path)
@@ -157,9 +156,11 @@ module Motion
     # short and sweet.
     #
     def inspect
-      cocoapods_config.lockfile.to_hash['PODS'].map do |pod|
-        pod.is_a?(Hash) ? pod.keys.first : pod
-      end.inspect
+      cocoapods_config
+        .lockfile
+        .to_hash["PODS"]
+        .map { |pod| pod.is_a?(Hash) ? pod.keys.first : pod }
+        .inspect
     end
 
     def cocoapods_config
@@ -193,22 +194,31 @@ module Motion
     #
     def resources
       resources = []
-      File.open(Pathname.new(@config.project_dir) + SUPPORT_FILES + "Pods-#{TARGET_NAME}-resources.sh") { |f|
+      resource_path =
+        Pathname.new(@config.project_dir) +
+        SUPPORT_FILES +
+        "Pods-#{TARGET_NAME}-resources.sh"
+
+      File.open(resource_path) { |f|
         f.each_line do |line|
-          if matched = line.match(/install_resource\s+(.*)/)
-            path = (matched[1].strip)[1..-2]
-            path.sub!("${BUILD_DIR}/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}", ".build")
-            unless File.extname(path) == '.framework'
-              resources << Pathname.new(@config.project_dir) + PODS_ROOT + path
-            end
-          end
+          matched = line.match(/install_resource\s+(.*)/)
+
+          next unless matched
+
+          path = (matched[1].strip)[1..-2]
+
+          path.sub!("${BUILD_DIR}/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}", ".build")
+
+          next if File.extname(path) == ".framework"
+
+          resources << Pathname.new(@config.project_dir) + PODS_ROOT + path
         end
       }
       resources.uniq
     end
 
     def resources_dir
-      Pathname.new(@config.project_dir) + PODS_ROOT + 'Resources'
+      Pathname.new(@config.project_dir) + PODS_ROOT + "Resources"
     end
 
     private
@@ -226,11 +236,11 @@ module Motion
       @config.libs.concat(libs_to_compile.compact)
       @config.libs.uniq!
 
-      @header_dirs = ['Headers/Public']
+      @header_dirs = ["Headers/Public"]
 
       case @config.deploy_platform
-      when 'MacOSX' then configure_for_osx(framework_search_paths)
-      when 'iPhoneOS' then configure_for_iphone(framework_search_paths)
+      when "MacOSX" then configure_for_osx(framework_search_paths)
+      when "iPhoneOS" then configure_for_iphone(framework_search_paths)
       end
 
       @config.frameworks.concat(frameworks)
@@ -264,7 +274,7 @@ module Motion
     end
 
     def configure_for_iphone(framework_search_paths)
-      pods_root = cocoapods_config.installation_root + 'Pods'
+      pods_root = cocoapods_config.installation_root + "Pods"
       # If we would really specify these as ‘frameworks’ then the linker
       # would not link the archive into the application, because it does not
       # see any references to any of the symbols in the archive. Treating it
@@ -280,7 +290,7 @@ module Motion
             #
             #   https://github.com/CocoaPods/CocoaPods/pull/2722
             #
-            header_dir = Pathname.new(path) + 'Headers'
+            header_dir = Pathname.new(path) + "Headers"
             @header_dirs << header_dir.realpath.relative_path_from(pods_root).to_s
             true
           else
@@ -312,7 +322,7 @@ module Motion
     end
 
     def framework_search_paths
-      search_paths = xcconfig_hash['FRAMEWORK_SEARCH_PATHS']
+      search_paths = xcconfig_hash["FRAMEWORK_SEARCH_PATHS"]
 
       return [] unless search_paths
 
@@ -338,7 +348,7 @@ module Motion
     end
 
     def ldflags
-      xcconfig_hash['OTHER_LDFLAGS']
+      xcconfig_hash["OTHER_LDFLAGS"]
     end
 
     def linked_libraries
@@ -346,7 +356,7 @@ module Motion
     end
 
     def parse_search_paths_and_flags
-      flags = xcconfig_hash['LIBRARY_SEARCH_PATHS'] || ""
+      flags = xcconfig_hash["LIBRARY_SEARCH_PATHS"] || ""
 
       search_paths = []
 
@@ -384,7 +394,7 @@ module Motion
     end
 
     def static_libraries_in_path(path)
-      Dir[File.join(path, '**/*.a')].map { |f| File.basename(f) }
+      Dir[File.join(path, "**/*.a")].map { |f| File.basename(f) }
     end
 
     def weak_frameworks
