@@ -28,7 +28,7 @@ module Motion
       variable :pods
 
       def pods(vendor_options = {}, &block)
-        @pods ||= Motion::CocoaPods.new(self, vendor_options)
+        @pods ||= Motion::Pods.new(self, vendor_options)
         @pods.instance_eval(&block) if block
         @pods
       end
@@ -37,10 +37,10 @@ module Motion
     class App
       class << self
         def build_with_cocoapods(platform, opts = {})
-          unless File.exist?(CocoaPods::PODS_ROOT)
+          unless File.exist?(Motion::Pods::PODS_ROOT)
             $stderr.puts(
               "[!] No CocoaPods dependencies found in " \
-              "#{CocoaPods::PODS_ROOT}, run the " \
+              "#{Motion::Pods::PODS_ROOT}, run the " \
               "`[bundle exec] rake pod:install` task."
             )
             exit 1

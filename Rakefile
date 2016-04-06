@@ -1,6 +1,6 @@
 desc "Build the gem"
 task :gem do
-  sh "bundle exec gem build motion-cocoapods.gemspec"
+  sh "bundle exec gem build motion-pods.gemspec"
   sh "mkdir -p pkg"
   sh "mv *.gem pkg/"
 end

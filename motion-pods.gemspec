@@ -1,10 +1,10 @@
 require 'date'
 $:.unshift File.expand_path('../lib', __FILE__)
-require 'motion/cocoapods/version'
+require 'motion/pods/version'
 
 Gem::Specification.new do |spec|
-  spec.name = 'motion-cocoapods'
-  spec.version = Motion::CocoaPods::VERSION
+  spec.name = 'motion-pods'
+  spec.version = Motion::Pods::VERSION
   spec.date = Date.today
   spec.summary = 'CocoaPods integration for RubyMotion projects'
   spec.description = "motion-cocoapods allows RubyMotion projects to have access to the CocoaPods dependency manager."

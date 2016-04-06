@@ -14,7 +14,7 @@ require 'rake'
 require 'motion/project/template/ios'
 
 require 'cocoapods'
-require 'motion-cocoapods'
+require 'motion-pods'
 
 require 'fileutils'
 module SpecHelper
