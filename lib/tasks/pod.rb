@@ -65,7 +65,7 @@ end
 namespace :clean do
   # This gets appended to the already existing clean:all task.
   task :all do
-    dir = Motion::CocoaPods::PODS_ROOT
+    dir = Motion::Pods::PODS_ROOT
     if File.exist?(dir)
       App.info 'Delete', dir
       rm_rf dir

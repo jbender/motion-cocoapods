@@ -1,22 +1,22 @@
-# motion-cocoapods
-[![Gem](https://img.shields.io/gem/v/motion-cocoapods.svg)](https://rubygems.org/gems/motion-cocoapods)
-[![Build Status](https://img.shields.io/travis/jbender/motion-cocoapods.svg)](https://travis-ci.org/jbender/motion-cocoapods)
-[![Code Climate](https://img.shields.io/codeclimate/github/jbender/motion-cocoapods.svg)](https://codeclimate.com/github/jbender/motion-cocoapods)
+# motion-pods
+[![Gem](https://img.shields.io/gem/v/motion-pods.svg)](https://rubygems.org/gems/motion-pods)
+[![Build Status](https://img.shields.io/travis/jbender/motion-pods.svg)](https://travis-ci.org/jbender/motion-pods)
+[![Code Climate](https://img.shields.io/codeclimate/github/jbender/motion-pods.svg)](https://codeclimate.com/github/jbender/motion-pods)
 
-motion-cocoapods allows RubyMotion projects to integrate with the
+A fork of [motion-cocoapods](https://github.com/HipByte/motion-cocoapods), motion-pods allows RubyMotion projects to integrate with the
 [CocoaPods](https://cocoapods.org/) dependency manager.
 
 
 ## Installation
 
 ```
-$ [sudo] gem install motion-cocoapods
+$ [sudo] gem install motion-pods
 ```
 
 Or if you use Bundler:
 
 ```ruby
-gem 'motion-cocoapods'
+gem 'motion-pods'
 ```
 
 
@@ -27,7 +27,7 @@ gem 'motion-cocoapods'
 
    ```ruby
    require 'rubygems'
-   require 'motion-cocoapods'
+   require 'motion-pods'
    ```
 
 2. Still in the `Rakefile`, set your dependencies using the same language as
@@ -52,7 +52,7 @@ gem 'motion-cocoapods'
 
 ## Tasks
 
-To tell motion-cocoapods to download your dependencies, run the following rake
+To tell motion-pods to download your dependencies, run the following rake
 task:
 
 ```
@@ -107,8 +107,8 @@ $ [bundle exec] rake pod:install COCOAPODS_NO_REPO_UPDATE=1
 1. Setup a local development environment.
 
    ```
-   $ git clone git://github.com/HipByte/motion-cocoapods.git
-   $ cd motion-cocoapods
+   $ git clone git://github.com/jbender/motion-pods.git
+   $ cd motion-pods
    $ [bundle exec] rake bootstrap
    ```
 

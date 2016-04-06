@@ -1,4 +1,4 @@
-# Copyright (c) 2012-2013, Laurent Sansonetti <lrz@hipbyte.com>
+# Copyright (c) 2012, Laurent Sansonetti <lrz@hipbyte.com>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -22,8 +22,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-module Motion
-  class CocoaPods
-    VERSION = '1.8.0.beta.2'
-  end
+unless defined?(Motion::Project::Config)
+  raise "This file must be required within a RubyMotion project Rakefile."
 end
+
+# External dependencies
+require 'xcodeproj'
+require 'cocoapods'
+require 'yaml'
+
+# Gem files
+require 'motion/pods/version'
+require 'motion/pods/main'
+require 'tasks/pod'
+
+# Monkeypatch Motion::Project to add CocoaPod methods
+require 'motion/project/monkeypatches'

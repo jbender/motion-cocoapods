@@ -10,7 +10,7 @@ module Motion; module Project;
   end
 end; end
 
-describe "motion-cocoapods" do
+describe "motion-pods" do
   extend SpecHelper::TemporaryDirectory
 
   def podfile=(podfile); @podfile = podfile; end
@@ -46,7 +46,7 @@ describe "motion-cocoapods" do
       end
 
       @installed_pods_name = nil
-      Pod::HooksManager.register('motion_cocoapods_spec', :post_install) { |installer|
+      Pod::HooksManager.register('motion_pods_spec', :post_install) { |installer|
         @installed_pods_name = installer.pod_targets.map(&:name) if installer
       }
     end

@@ -23,7 +23,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 module Motion
-  class CocoaPods
+  class Pods
     PODS_ROOT = 'vendor/Pods'
     TARGET_NAME = 'RubyMotion'
     PUBLIC_HEADERS_ROOT = File.join(PODS_ROOT, 'Headers/Public')

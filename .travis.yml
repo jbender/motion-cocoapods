@@ -1,8 +1,6 @@
 language: objective-c
-
 osx_image: xcode7.2
-rvm: '2.2.3'
-
+rvm: 2.2.3
 before_install:
   - sudo motion update
   - rvm get stable --auto-dotfiles
@@ -11,13 +9,18 @@ before_install:
   - sudo gem install cocoapods --pre --no-document --quiet
   - pod --version
   - pod setup --silent
-
 install:
   - bundle install
-
 script:
   - bundle exec rake spec
-
 cache:
   bundler: true
   cocoapods: true
+deploy:
+  provider: rubygems
+  api_key:
+    secure: LZ8vPyRnstI+fMSyUX70MIaXJcMXTMX1r7KjKw8BDQNp0zqw8zvZjQXsyArxio3blVLKE3WsR9D501f+eNyzWPTtHh6QD8x9H1h+BWLvYlySajwlo/vcWtKCI3UlvHMT/PZE7bb9cTX0sOvQJ/2pLdlUatVXaaFTqEL8baaLOH8AfzujzO1PCIMrJdZugyk0ZKdDvZkU4OGWvqg8540scdIV3xKXI0fgi5NQ//IW5s2kckk0+uXHxtYsnDFkSGBvjPJz/YzRnj08gSFu+QKeCKL+9xCrvH3eBkI221buglqlPUzjX7HLc2zvJkvRU88WjqpLlNCd0xBD/XrEhUTkx94GuFPsU1FXDxEM4/1teT0BGJ0mMDixDfLB1J6RhxCwUJ84wPNlxsNe0JSJ9JYQSBBHmm32zJ1RiY4JtJ9fvzm36imb5mSeqSLCFkbysZmsAJ8jOZTjcCG8EklBFOtz9ewiaxZY9mWTcvd26d35G1kS5Uh003tsESx6DG0UmNmj2TwHQh/i4PSpye/uC0TqiyaMyYMulqyPHk7WGRDK+niNSiY5ytgn3lkVCNO061dh6EBueXPCk7v0fpZ1UfCZOacqxLROHp1oZdInpYpjg30Ja3ZdHgO7r6w07wGnNP5QmS6MdO8UNHCCmmk6jxVf4XYwlqOlLtpR/9dSZLvJLWk=
+  gem: motion-pods
+  on:
+    tags: true
+    repo: jbender/motion-pods
