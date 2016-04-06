@@ -28,7 +28,8 @@ module Motion
     TARGET_NAME = 'RubyMotion'
     PUBLIC_HEADERS_ROOT = File.join(PODS_ROOT, 'Headers/Public')
     PODS_ROOT_MATCHER = /(\$\(PODS_ROOT\))|(\$\{PODS_ROOT\})/
-    SUPPORT_FILES = File.join(PODS_ROOT, "Target Support Files/Pods-#{TARGET_NAME}")
+    SUPPORT_FILES =
+      File.join(PODS_ROOT, "Target Support Files/Pods-#{TARGET_NAME}")
 
     attr_accessor :podfile
 
@@ -45,12 +46,13 @@ module Motion
         else App.fail "Unknown CocoaPods platform: #{@config.deploy_platform}"
         end
 
-      @podfile = Pod::Podfile.new(Pathname.new(Rake.original_dir) + 'Rakefile') {}
+      @podfile =
+        Pod::Podfile.new(Pathname.new(Rake.original_dir) + 'Rakefile') {}
       @podfile.platform(platform, config.deployment_target)
       @podfile.target(TARGET_NAME)
       cocoapods_config.podfile = @podfile
-      cocoapods_config.skip_repo_update = true
-      cocoapods_config.installation_root = Pathname.new(File.expand_path(config.project_dir)) + 'vendor'
+      cocoapods_config.installation_root =
+        Pathname.new(File.expand_path(config.project_dir)) + 'vendor'
 
       if cocoapods_config.verbose = !!ENV["COCOAPODS_VERBOSE"]
         require 'claide'
@@ -207,7 +209,10 @@ module Motion
 
           path = (matched[1].strip)[1..-2]
 
-          path.sub!("${BUILD_DIR}/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}", ".build")
+          path.sub!(
+            "${BUILD_DIR}/${CONFIGURATION}${EFFECTIVE_PLATFORM_NAME}",
+            ".build"
+          )
 
           next if File.extname(path) == ".framework"
 
@@ -333,14 +338,21 @@ module Motion
       framework_search_paths = []
 
       search_paths.scan(/"([^"]+)"/) do |search_path|
-        path = search_path.first.gsub!(PODS_ROOT_MATCHER, "#{@config.project_dir}/#{PODS_ROOT}")
+        path = search_path.first.gsub!(
+          PODS_ROOT_MATCHER,
+          "#{@config.project_dir}/#{PODS_ROOT}"
+        )
         framework_search_paths << path if path
       end
 
-      # If we couldn't parse any search paths, then presumably nothing was properly quoted, so
-      # fallback to just assuming the whole value is one path.
+      # If we couldn't parse any search paths, then presumably nothing was
+      # properly quoted, so fallback to just assuming the whole value is one
+      # path.
       if framework_search_paths.empty?
-        path = search_paths.gsub!(PODS_ROOT_MATCHER, "#{@config.project_dir}/#{PODS_ROOT}")
+        path = search_paths.gsub!(
+          PODS_ROOT_MATCHER,
+          "#{@config.project_dir}/#{PODS_ROOT}"
+        )
         framework_search_paths << path if path
       end
 
